@@ -47,7 +47,7 @@ def sha256_file(path: Path) -> str:
 def verify_payload(path: Path) -> dict[str, object]:
     manifest_path = path.with_name("manifest.json")
     if not manifest_path.is_file():
-        raise FileNotFoundError("固件清单缺失，请重新下载本 Demo 的完整发布包")
+        raise FileNotFoundError("固件清单缺失，请确认 .bin 与仓库中的 manifest.json 位于同一目录")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     expected = manifest.get("sha256", {})
     if not path.is_file():

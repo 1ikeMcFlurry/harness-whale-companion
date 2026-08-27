@@ -157,7 +157,7 @@ def install_payload(dsh_root: Path, *, dry_run: bool = False) -> tuple[Path, Pat
     bridge_source = source_resource("harness_ble_bridge.py")
     protocol_source = source_resource("harness_ble_protocol.py")
     if not plugin_source.is_file() or not bridge_source.is_file() or not protocol_source.is_file():
-        raise FileNotFoundError("源码资源不完整，请重新下载项目或发布包")
+        raise FileNotFoundError("源码资源不完整，请重新下载代码仓库")
 
     plugin_dest = dsh_root / "plugins" / PLUGIN_ID / "index.ts"
     bridge_dir = dsh_root / "harness-whale-bridge"
@@ -184,7 +184,7 @@ def ensure_bridge_venv(bridge_dir: Path, *, dry_run: bool = False) -> Path:
     if wheels.is_dir() and any(wheels.glob("bleak-*.whl")):
         if os.name != "nt" or struct.calcsize("P") != 8 or not ((3, 10) <= sys.version_info[:2] <= (3, 13)):
             raise RuntimeError(
-                "发布包的离线 wheel 支持 64 位 Windows Python 3.10～3.13；"
+                "本地离线 wheel 只支持 64 位 Windows Python 3.10～3.13；"
                 "请换用受支持版本，或从源码目录联网安装"
             )
         install.extend(["--no-index", "--find-links", str(wheels), "bleak==1.1.1"])

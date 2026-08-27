@@ -74,20 +74,23 @@ flowchart LR
 
 ## 最快安装方式
 
-### 1. 下载发布包
+### 1. 下载代码与固件
 
-打开 [Releases](https://github.com/1ikeMcFlurry/harness-whale-companion/releases/latest)，下载：
+先克隆仓库，或使用 GitHub 的 **Code → Download ZIP** 下载代码：
 
-`Harness-Whale-v1.1.0-Windows-source.zip`
+```powershell
+git clone https://github.com/1ikeMcFlurry/harness-whale-companion.git
+cd harness-whale-companion
+```
 
-解压后，目录里包含可审阅的 Python/TypeScript 源码、离线依赖、烧录脚本和合并固件，不包含 EXE。
+再从 [Releases](https://github.com/1ikeMcFlurry/harness-whale-companion/releases/latest) 下载唯一的固件文件 `Harness-Whale-ESP32C3-8MB.bin`，放到 `installer\firmware\`。校验清单已经包含在代码仓库中。
 
 ### 2. 安装 Harness Companion
 
-在解压目录打开 PowerShell：
+在仓库根目录打开 PowerShell：
 
 ```powershell
-python install_companion.py
+python installer\install_companion.py
 ```
 
 安装器会：
@@ -108,8 +111,8 @@ API Key 可以直接回车跳过；跳过后其余状态功能仍可使用，设
 
 ```powershell
 python -m venv .flash-venv
-.\.flash-venv\Scripts\python.exe -m pip install -r requirements-flash.txt
-.\.flash-venv\Scripts\python.exe flash_firmware.py
+.\.flash-venv\Scripts\python.exe -m pip install -r installer\requirements-flash.txt
+.\.flash-venv\Scripts\python.exe installer\flash_firmware.py
 ```
 
 脚本会自动识别串口、校验 SHA-256、擦除 Flash，并把完整镜像从 `0x0` 写入。烧录后 BLE 名称为 `HARNESS-WHALE`。
@@ -125,17 +128,9 @@ python -m venv .flash-venv
 
 为了保持小屏交互简单，多选、自由文本和复杂的“其他”补充仍回到电脑完成。电脑与设备同时等待时，任意一端先回答，另一端会自动取消，避免重复提交。
 
-## 从仓库源码安装
+## 自定义固件路径
 
-联网环境中可直接克隆仓库并运行源码安装器：
-
-```powershell
-git clone https://github.com/1ikeMcFlurry/harness-whale-companion.git
-cd harness-whale-companion
-python installer\install_companion.py
-```
-
-若要从源码目录烧录预编译固件，请从 Release 同时下载 `.bin` 与 `manifest.json`，放在同一目录，再执行：
+若不想把 `.bin` 放到 `installer\firmware\`，请把 `installer\firmware\manifest.json` 复制到 `.bin` 同一目录，再显式指定固件：
 
 ```powershell
 python -m venv .flash-venv
@@ -166,7 +161,7 @@ python scripts\release.py
 
 仓库根目录的 [`AGENTS.md`](AGENTS.md) 和 [`docs/AI_DEPLOYMENT.md`](docs/AI_DEPLOYMENT.md) 是机器可读的确定性操作说明。可以把下面这段话直接交给能够操作本机终端的 AI：
 
-> 请先完整阅读 AGENTS.md 和 docs/AI_DEPLOYMENT.md，然后按“Release 发布包安装”流程部署 Harness Whale Companion。先做只读环境检查，再运行源码安装器；API Key 必须由我在终端中静默输入，禁止输出、记录或写入脚本。烧录前必须确认串口和整片擦除范围，只烧录目标 ESP32-C3，不要修改其他 Harness 插件。
+> 请先完整阅读 AGENTS.md 和 docs/AI_DEPLOYMENT.md，然后从这个代码仓库部署 Harness Whale Companion，并从 Release 下载唯一的 .bin 固件。先做只读环境检查，再运行源码安装器；API Key 必须由我在终端中静默输入，禁止输出、记录或写入脚本。烧录前必须确认串口和整片擦除范围，只烧录目标 ESP32-C3，不要修改其他 Harness 插件。
 
 ## 项目目录
 
@@ -197,10 +192,9 @@ python scripts\release.py
 
 | 文件 | 用途 |
 |---|---|
-| `Harness-Whale-v1.1.0-Windows-source.zip` | 推荐下载；源码安装器、离线 BLE 依赖、烧录器和固件 |
 | `Harness-Whale-ESP32C3-8MB.bin` | ESP32-C3 8 MB 完整合并固件，烧录偏移 `0x0` |
-| `manifest.json` | 版本、芯片、Flash、偏移与固件 SHA-256 |
-| `SHA256SUMS.txt` | Release 文件完整性校验 |
+
+Release 只放 `.bin`。Harness 插件、桥接器、安装器、固件源码、manifest、AI 部署说明和测试全部在代码仓库中，便于直接审阅与更新。
 
 ## 安全与隐私
 

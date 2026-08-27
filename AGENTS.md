@@ -15,7 +15,7 @@
 
 ## 推荐部署路线
 
-优先使用 GitHub Release 中的 `Harness-Whale-v1.1.0-Windows-source.zip`。它包含可审阅源码、离线 BLE wheel、烧录器和已校验固件，不含 EXE。
+克隆或下载本代码仓库，从 GitHub Release 只下载 `Harness-Whale-ESP32C3-8MB.bin`，并放到 `installer/firmware/`。插件、桥接器、安装器、manifest 与部署说明都直接使用仓库内文件。
 
 完整步骤见 `docs/AI_DEPLOYMENT.md`。执行顺序必须是：环境检查 → 安装 Companion → 重启 Harness → 查询 `/whale` → 连接目标串口 → 固件校验 → 用户确认 → 烧录 → 验证。
 
