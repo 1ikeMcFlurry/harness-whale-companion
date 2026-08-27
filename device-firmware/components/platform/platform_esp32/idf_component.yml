@@ -1,0 +1,9 @@
+# components/platform_esp32/idf_component.yml
+dependencies:
+  idf: ">=5.5.0"
+  # ST7789P3(T200H7-C14-05)使用 ESP-IDF 内置 esp_lcd 驱动,无需额外组件
+  lvgl/lvgl: "^9.5.0"
+  espressif/esp_lvgl_port: "*"      # 见架构文档版本提醒
+  espressif/button: "*"             # iot_button
+  espressif/esp_codec_dev: "*"      # 含 ES8311 codec 驱动
+  espressif/esp_new_jpeg: "^1.0.0"  # 软件 JPEG 解码(块模式,直出 RGB565)

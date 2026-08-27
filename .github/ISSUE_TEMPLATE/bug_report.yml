@@ -1,0 +1,42 @@
+name: Demo 问题反馈
+description: 反馈可复现的安装、连接、显示或交互问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请勿粘贴 API Key、密码、Token、完整用户名或其他敏感信息。
+  - type: dropdown
+    id: area
+    attributes:
+      label: 问题范围
+      options:
+        - Harness 插件
+        - BLE 桥接器
+        - 固件 / UI
+        - 设备端选择
+        - 安装 / 烧录
+        - 余额显示
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      placeholder: v1.1.0
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 请写最短可复现步骤，并对路径、设备名和日志做脱敏。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期与实际结果
+    validations:
+      required: true

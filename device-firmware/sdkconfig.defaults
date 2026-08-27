@@ -1,0 +1,102 @@
+# --- 目标芯片 ---
+CONFIG_IDF_TARGET="esp32c3"
+# 注:ESP32-C3 无 PSRAM,故不设 CONFIG_SPIRAM。
+
+# --- Flash / 分区 ---
+# 当前完整分区结束于 0x4FA000,量产目标必须使用 8MB flash。
+# 4MB 开发板即使 app 本体能够启动,也无法容纳 audio/imgava 等完整分区,
+# 不能用于验证完整产品功能,更不能作为量产等价板。
+# 关键:镜像头里的 flash 大小若大于芯片实际容量,启动时 esp_flash_init_default_chip
+# 探测失败 → assert(startup_funcs.c:118) → panic → 无限重启。
+# HEADER_FLASHSIZE_UPDATE 让 idf.py/esptool 在烧录时把实际探测容量写进镜像头,
+# 可避免镜像头容量与芯片不符;它不会扩大片上 flash,也不会使 4MB 芯片容纳当前分区表。
+# (该选项与 Secure Boot 不兼容;将来若启用安全启动需改为分构建配置。)
+CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_ESPTOOLPY_HEADER_FLASHSIZE_UPDATE=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# --- LVGL ---
+CONFIG_LV_COLOR_DEPTH_16=y
+# 注:LVGL 9 已无 CONFIG_LV_COLOR_16_SWAP;字节交换改由
+# esp_lvgl_port 的 lvgl_port_display_cfg_t.flags.swap_bytes 控制(见 lvgl_port_setup.c)。
+# 档案卡界面用到的字号
+CONFIG_LV_FONT_MONTSERRAT_10=y
+CONFIG_LV_FONT_MONTSERRAT_12=y
+CONFIG_LV_FONT_MONTSERRAT_14=y
+CONFIG_LV_FONT_MONTSERRAT_24=y
+CONFIG_LV_FONT_MONTSERRAT_28=y
+CONFIG_LV_FONT_MONTSERRAT_34=y
+
+# --- 控制台:USB-Serial-JTAG(GPIO18/19,C3 原生 USB)---
+# 引脚唯一事实源是 board_config.h 的 BOARD_CONFIG_DEFAULT():
+#   LCD   MOSI=9,SCLK=8,CS=1,DC=20,RST=-1,BL=21
+#   Button GPIO0/ADC1_CH0
+#   I2C   SDA=10,SCL=7
+#   I2S   MCLK=6,BCLK=5,WS=3,DOUT=2,DIN=4,PA=-1
+# GPIO18/19 留给 C3 原生 USB-Serial-JTAG,单根 USB-C 同时用于烧录、日志
+# (printf/ESP_LOG)和产线 AT 指令。UART0 默认 TX=21 与 LCD 背光冲突,故不用 UART0 控制台。
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
+CONFIG_USJ_ENABLE_USB_SERIAL_JTAG=y
+
+# --- 系统 ---
+CONFIG_FREERTOS_HZ=1000
+CONFIG_LWIP_SNTP_MAX_SERVERS=3
+# This image only sends DHCP/DNS/SNTP traffic. Keep the Wi-Fi pools small so
+# the no-PSRAM ESP32-C3 still has enough heap for DHCP and the emulator.
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=4
+CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM=8
+CONFIG_ESP_WIFI_DYNAMIC_TX_BUFFER_NUM=8
+CONFIG_ESP_WIFI_RX_MGMT_BUF_NUM_DEF=3
+CONFIG_ESP_WIFI_TX_BA_WIN=4
+CONFIG_ESP_WIFI_RX_BA_WIN=4
+CONFIG_ESP_WIFI_MGMT_SBUF_NUM=8
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+
+# ble_config.c 同时作为 GATT peripheral/broadcaster 提供配置服务,并作为 GATT client
+# 主动发起 MTU exchange;ble_scan.c 使用 observer 扫描 token/profile 广播。
+# 显式锁定源码需要的角色,避免 IDF/组件默认值变化后静默裁掉功能。
+CONFIG_BT_NIMBLE_ROLE_CENTRAL=y
+CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
+CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
+CONFIG_BT_NIMBLE_ROLE_OBSERVER=y
+CONFIG_BT_NIMBLE_GATT_CLIENT=y
+CONFIG_BT_NIMBLE_GATT_SERVER=y
+
+# ble_config.c 的协商梯度从 256 开始,截图通知按协商后的 ATT payload(MTU-3)分包。
+# 该值必须不小于协议期望值;对端不接受时源码会自动降到 185/23。
+CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU=256
+
+# 低功耗:空闲超时后进入 deep sleep，由 GPIO0 ADC 功能键节点低电平唤醒。
+# 运行期间仍保留 BLE modem sleep；不启用 CPU light sleep / PM tickless。
+CONFIG_BT_CTRL_MODEM_SLEEP=y
+
+# --- 内存优化(C3 无 PSRAM,总堆仅 ~176KB,每一 KB 都要争)---
+# LVGL 内置 malloc 会在 .bss 里开一块**独立静态池**,它不与系统堆共享 ——
+# 用不完的部分等于被"搁浅",BLE/音频一个字节都拿不到(历史上 BLE 初始化被挤崩就与此有关)。
+# 默认 64KB → 48KB 省下 16KB 静态 RAM,直接回到系统堆。
+# 真机实测 lv_peak(历史峰值)约 35.4KB —— 建主界面时就到 32.5KB,跑完游戏/看图/宠物
+# 稳定在 35444。48KB 池可用约 46.8KB,余量 ~24%。**不要再往下调**:40KB 时可用仅 38.5KB,
+# 余量只剩 8%,而产测自检等界面尚未纳入实测。
+#
+# ⚠ 判断依据只能用日志里的 lv_peak(= lv_mem_monitor 的 max_used,**历史峰值**),
+#   绝不能用瞬时占用:LVGL 绘制时临时分配的 layer/draw 缓冲(整屏圆角 clip_corner 尤其吃)
+#   在两次采样之间就已释放,瞬时值会严重低估真实需求。
+#   实测教训:按瞬时值(~12KB)把池砍到 28KB → LVGL 在 TLSF 里反复找不到块、绘制卡死,
+#   IDLE 喂不到狗触发 task_wdt,开机直接卡在建界面阶段。
+#   池不足的表现是"卡死/看门狗",**不是** assert —— 不要指望它会干脆地报错。
+CONFIG_LV_MEM_SIZE_KILOBYTES=48
+
+# NimBLE 按"实际只用 1 条连接、业务不依赖配对绑定"收敛(ble_config.c 的 s_conn 是单句柄)。
+# 这几项的缓冲是运行时从堆分配的(MEM_ALLOC_MODE_INTERNAL),故省在运行期堆、不体现在 .bss。
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
+CONFIG_BT_NIMBLE_MAX_BONDS=1
+# 状态、普通通知、截图通知各需要一个 CCCD。
+CONFIG_BT_NIMBLE_MAX_CCCDS=3
+# 控制器并发活动数:1 连接 + 广播 + 扫描 = 3,留 1 余量。再低可能导致广播/扫描起不来。
+CONFIG_BT_CTRL_BLE_MAX_ACT=4
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192

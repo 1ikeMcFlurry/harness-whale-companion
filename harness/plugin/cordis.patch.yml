@@ -1,0 +1,4 @@
+# DeepSeek Harness web profile patch for the personal Harness Whale demo.
+- insert:
+  - id: harness-whale-companion
+    name: 'file:///C:/Users/YOUR_NAME/.dsh/plugins/harness-whale-companion/index.ts'

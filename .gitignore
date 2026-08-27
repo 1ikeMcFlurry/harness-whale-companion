@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ESP-IDF generated files
+device-firmware/build/
+device-firmware/managed_components/
+device-firmware/sdkconfig.old
+
+# Locally generated release artifacts
+.release-assets/
+*.bin
+*.elf
+*.map
+*.zip
+SHA256SUMS.txt
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+secrets.*
+*.pem
+*.key
