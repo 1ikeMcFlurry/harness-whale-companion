@@ -12,7 +12,7 @@ set(EXTRA_COMPONENT_DIRS
     components/app)
 
 # 固件版本(供 release.py 命名与 esp_app_desc 使用)。发版时按需递增。
-set(PROJECT_VER "1.0.0")
+set(PROJECT_VER "1.1.1")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(trae_card)

@@ -1118,12 +1118,15 @@ static void on_btn_raw(int index, hal_btn_event_t e, void *user) {
             }
             return;
         }
-        // Harness 副屏只允许长按确定键退出，避免状态变化时误触主页。
+        // 多功能固件允许长按确定退出到主页；Harness 专用固件没有主页，
+        // 加载 ui_harness_create() 之前保存的 home 只会得到空白根屏，因此必须常驻。
+#if !PRODUCT_HARNESS_ONLY
         if (index == 2 && e == HAL_BTN_LONG && platform_lvgl_lock(0)) {
             ui_harness_close();
             platform_lvgl_nav_enable(true);
             platform_lvgl_unlock();
         }
+#endif
         return;
     }
     if (ui_pet_is_active()) {
